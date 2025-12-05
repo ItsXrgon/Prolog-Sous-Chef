@@ -153,7 +153,7 @@ build_situation(result(stack(Ingredient), S)) :-
 % Arguments:
 %   S: A situation representing a complete valid burger
 burgerReady(S) :-
-    ids_burgerReady(S, 10).
+    ids_burgerReady(S, 1).
 
 
 % ids_burgerReady(S, Limit)

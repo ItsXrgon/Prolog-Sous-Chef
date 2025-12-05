@@ -2,7 +2,7 @@
 
 **Team ID:** 47  
 **Team Members:**
-1. [Name] - [Student ID]
+1. [Ali Khaled Koheil] - [55-24778]
 2. [Name] - [Student ID]
 3. [Name] - [Student ID]
 
@@ -14,6 +14,7 @@
 
 ```prolog
 :- include('KB1.pl').
+% :- include('KB2.pl').
 ```
 
 **Comment:** Loads the ordering constraints (`above/2` facts) from the knowledge base. Can be switched to KB2.pl for testing different constraint sets.
@@ -34,19 +35,10 @@ stacked(_, s0) :- fail.
 ```
 
 **ARGUMENTS:**
-- **`Ingredient`**: An atom representing the ingredient
-  - **Type**: Atom
-  - **Domain**: `{bottom_bun, patty, lettuce, cheese, pickles, tomato, top_bun}`
-  - **Purpose**: Identifies which ingredient we're checking for in the situation
-
-- **`S`** (or `result(Action, S)`): A situation term representing the world state
-  - **Type**: Situation term
-  - **Domain**: `s0` (initial state) or `result(Action, PreviousSituation)`
-  - **Purpose**: Represents the state of the world at a particular point in the action sequence
+- `Ingredient`: An atom representing the ingredient
+- `S` (or `result(Action, S)`): A situation term representing the world state
 
 **SUCCESSOR STATE AXIOM FORM:**
-
-This follows the standard SSA pattern: `Fluent(result(a,s)) ↔ γ⁺(a,s) ∨ Fluent(s)`
 
 1. **Positive Effect Axiom (γ⁺)**: `Action = stack(Ingredient)`
    - The ingredient becomes stacked if the action performed is `stack(Ingredient)`
@@ -59,12 +51,6 @@ This follows the standard SSA pattern: `Fluent(result(a,s)) ↔ γ⁺(a,s) ∨ F
 3. **Base Case**: `stacked(_, s0) :- fail`
    - No ingredients are stacked in the initial situation s0
    - Establishes the starting state of the world
-
-**Why this is a proper SSA:**
-- Explicitly checks the `Action` parameter (not just recursion)
-- Includes both effect axiom and frame axiom
-- Has proper base case
-- Uses pure situation calculus (no assert/retract)
 
 ---
 
@@ -84,7 +70,7 @@ all_ingredients_stacked(S) :-
 **ARGUMENT:**
 - `S`: The situation to check
 
-**Comment:** Verifies all 7 required ingredients are present by checking the `stacked/2` fluent for each. All checks must succeed (conjunction). Ensures burger completeness.
+**Comment:** Verifies all 7 required ingredients are present by checking the `stacked/2` fluent for each. All checks must succeed. Ensures burger completeness.
 
 ---
 
@@ -107,7 +93,7 @@ count_stacks(Ingredient, result(stack(Other), S), Count) :-
 - `S`: The situation to examine
 - `Count`: Output - number of times the ingredient was stacked
 
-**Comment:** Recursively traverses the situation structure backwards from the final state to s0. When it finds the ingredient being stacked, it increments the count. When it finds a different ingredient, it maintains the count. Essential for detecting duplicates (Query 5).
+**Comment:** Recursively traverses the situation structure backwards from the final state to s0. When it finds the ingredient being stacked, it increments the count. When it finds a different ingredient, it maintains the count.
 
 ---
 
@@ -127,7 +113,7 @@ one_of_each_ingredient(S) :-
 **ARGUMENT:**
 - `S`: The situation to validate
 
-**Comment:** Ensures each ingredient appears exactly once by verifying `count_stacks/3` returns 1 for each ingredient. Prevents duplicate ingredients. Critical for rejecting Query 5 (duplicate cheese).
+**Comment:** Ensures each ingredient appears exactly once by verifying `count_stacks/3` returns 1 for each ingredient. Prevents duplicate ingredients.
 
 ---
 
@@ -158,7 +144,7 @@ last_action(result(Action, _), Action).
 - `S`: The situation (must be in form `result(Action, _)`)
 - `Action`: Output - the last (most recent) action
 
-**Comment:** Simply returns the outermost action from the situation structure. No recursion needed since the outermost action is the most recent. Used to verify `top_bun` is the last ingredient stacked. Critical for rejecting Query 4.
+**Comment:** Simply returns the outermost action from the situation structure. No recursion needed since the outermost action is the most recent. Used to verify `top_bun` is the last ingredient stacked.
 
 ---
 
@@ -238,7 +224,7 @@ build_situation(result(stack(Ingredient), S)) :-
 **ARGUMENT:**
 - `S`: A situation built from s0 through stacking actions
 
-**Comment:** Generates candidate situations for IDS to explore. Recursively builds situations by choosing ingredients and stacking them. `member/2` provides backtracking to try different ingredients. The `\+ stacked(Ingredient, S)` check ensures no ingredient is stacked twice during generation. This creates the search space - all possible orderings of 7 ingredients.
+**Comment:** Generates candidate situations for IDS to explore. Recursively builds situations by choosing ingredients and stacking them. `member/2` provides backtracking to try different ingredients. The `\+ stacked(Ingredient, S)` check ensures no ingredient is stacked twice during generation.
 
 ---
 
@@ -246,13 +232,13 @@ build_situation(result(stack(Ingredient), S)) :-
 
 ```prolog
 burgerReady(S) :-
-    ids_burgerReady(S, 10).
+    ids_burgerReady(S, 1).
 ```
 
 **ARGUMENT:**
-- `S`: Either unbound (to find a solution) or bound (to validate a configuration)
+- `S`: Either unbound to find solutions or bound to validate a burger configuration
 
-**Comment:** Main entry point for the system. Uses **ONLY** Iterative Deepening Search - no other search method is used. Calls IDS with an initial depth limit of 10, which is sufficient for stacking 7 ingredients plus validation checks.
+**Comment:** Main entry point for the system. Uses Iterative Deepening Search. Calls IDS with an initial depth limit of 1.
 
 ---
 
