@@ -2,6 +2,7 @@
 
 **Team ID:** 47  
 **Team Members:**
+
 1. Ali Khaled Koheil - 55-24778 - T-14
 2. Khaled Ashmawy - 55-25730 - T-23
 3. Youssef Nasser - 55-7165 - T-27
@@ -26,55 +27,38 @@
 This is the **only fluent** and **only successor state axiom** in our implementation.
 
 ```prolog
-stacked(Ingredient, result(Action, S)) :-
-    Action = stack(Ingredient)
-    ;
-    stacked(Ingredient, S).
-
 stacked(_, s0) :- fail.
+
+stacked(I, result(A, _)) :- 
+    A = stack(I), !.
+
+stacked(I, result(_, S)) :-
+    stacked(I, S).
 ```
 
 **ARGUMENTS:**
-- `Ingredient`: An atom representing the ingredient
-- `S` (or `result(Action, S)`): A situation term representing the world state
+
+- `I` (or `Ingredient`): An atom representing the ingredient
+- `S` (or `result(A, S)` or `result(_, S)`): A situation term representing the world state
 
 **SUCCESSOR STATE AXIOM FORM:**
 
-1. **Positive Effect Axiom (γ⁺)**: `Action = stack(Ingredient)`
-   - The ingredient becomes stacked if the action performed is `stack(Ingredient)`
-   - This is how actions change the world state
-
-2. **Frame Axiom (Persistence)**: `stacked(Ingredient, S)`
-   - The ingredient remains stacked if it was already stacked in the previous situation
-   - This solves the frame problem - things persist unless explicitly changed
-
-3. **Base Case**: `stacked(_, s0) :- fail`
+1. **Base Case**: `stacked(_, s0) :- fail`
    - No ingredients are stacked in the initial situation s0
    - Establishes the starting state of the world
 
----
+2. **Positive Effect Axiom (γ⁺)**: `A = stack(I), !`
+   - The ingredient becomes stacked if the action performed is `stack(I)`
+   - This is how actions change the world state
+   - The cut (!) prevents further checking once we find the action that stacked this ingredient
 
-### 3. Helper Predicate: `all_ingredients_stacked/1`
-
-```prolog
-all_ingredients_stacked(S) :-
-    stacked(bottom_bun, S),
-    stacked(patty, S),
-    stacked(lettuce, S),
-    stacked(cheese, S),
-    stacked(pickles, S),
-    stacked(tomato, S),
-    stacked(top_bun, S).
-```
-
-**ARGUMENT:**
-- `S`: The situation to check
-
-**Comment:** Verifies all 7 required ingredients are present by checking the `stacked/2` fluent for each. All checks must succeed. Ensures burger completeness.
+3. **Frame Axiom (Persistence)**: `stacked(I, S)`
+   - The ingredient remains stacked if it was already stacked in the previous situation
+   - This solves the frame problem - things persist unless explicitly changed
 
 ---
 
-### 4. Helper Predicate: `count_stacks/3`
+### 3. Helper Predicate: `count_stacks/3`
 
 ```prolog
 count_stacks(_, s0, 0).
@@ -89,6 +73,7 @@ count_stacks(Ingredient, result(stack(Other), S), Count) :-
 ```
 
 **ARGUMENTS:**
+
 - `Ingredient`: The ingredient to count
 - `S`: The situation to examine
 - `Count`: Output - number of times the ingredient was stacked
@@ -97,7 +82,7 @@ count_stacks(Ingredient, result(stack(Other), S), Count) :-
 
 ---
 
-### 5. Helper Predicate: `one_of_each_ingredient/1`
+### 4. Helper Predicate: `one_of_each_ingredient/1`
 
 ```prolog
 one_of_each_ingredient(S) :-
@@ -111,13 +96,14 @@ one_of_each_ingredient(S) :-
 ```
 
 **ARGUMENT:**
+
 - `S`: The situation to validate
 
 **Comment:** Ensures each ingredient appears exactly once by verifying `count_stacks/3` returns 1 for each ingredient. Prevents duplicate ingredients.
 
 ---
 
-### 6. Helper Predicate: `first_action/2`
+### 5. Helper Predicate: `first_action/2`
 
 ```prolog
 first_action(result(Action, s0), Action).
@@ -127,6 +113,7 @@ first_action(result(_, S), Action) :-
 ```
 
 **ARGUMENTS:**
+
 - `S`: The situation
 - `Action`: Output - the first action performed from s0
 
@@ -134,13 +121,14 @@ first_action(result(_, S), Action) :-
 
 ---
 
-### 7. Helper Predicate: `last_action/2`
+### 6. Helper Predicate: `last_action/2`
 
 ```prolog
 last_action(result(Action, _), Action).
 ```
 
 **ARGUMENTS:**
+
 - `S`: The situation (must be in form `result(Action, _)`)
 - `Action`: Output - the last (most recent) action
 
@@ -148,23 +136,39 @@ last_action(result(Action, _), Action).
 
 ---
 
-### 8. Helper Predicate: `stacked_before/3`
+### 7. Helper Predicate: `stacked_before/3`
 
 ```prolog
-stacked_before(Ingredient1, Ingredient2, result(stack(Ingredient2), S)) :-
-    stacked(Ingredient1, S),
-    !.
+stacked_before(I1, I2, result(stack(I2), S)) :-
+    stacked(I1, S), !.
 
-stacked_before(Ingredient1, Ingredient2, result(stack(_), S)) :-
-    stacked_before(Ingredient1, Ingredient2, S).
+stacked_before(I1, I2, result(_, S)) :-
+    stacked_before(I1, I2, S).
 ```
 
 **ARGUMENTS:**
-- `Ingredient1`: The ingredient that should be below (stacked earlier)
-- `Ingredient2`: The ingredient that should be above (stacked later)
+
+- `I1`: The ingredient that should be below (stacked earlier)
+- `I2`: The ingredient that should be above (stacked later)
 - `S`: The situation to examine
 
-**Comment:** Traverses the situation backwards. When it finds `Ingredient2` being stacked, it checks if `Ingredient1` was already stacked in the previous situation. The cut (!) stops the search once found for efficiency. This implements temporal ordering - if `Ingredient1` was stacked before `Ingredient2`, then `Ingredient1` is physically below `Ingredient2` in the burger.
+**Comment:** Traverses the situation backwards. When it finds `I2` being stacked, it checks if `I1` was already stacked in the previous situation. The cut (!) stops the search once found for efficiency. This implements temporal ordering - if `I1` was stacked before `I2`, then `I1` is physically below `I2` in the burger.
+
+---
+
+### 8. Helper Predicate: `poss/2`
+
+```prolog
+poss(stack(X), S) :-
+    \+ stacked(X, S).
+```
+
+**ARGUMENTS:**
+
+- `stack(X)`: The stacking action
+- `S`: The situation
+
+**Comment:** Checks if it's possible to stack ingredient `X` in situation `S`. An ingredient can only be stacked if it hasn't been stacked already.
 
 ---
 
@@ -179,6 +183,7 @@ constraints_satisfied(S) :-
 ```
 
 **ARGUMENT:**
+
 - `S`: The situation to validate
 
 **Comment:** Validates all ordering constraints from the knowledge base. Uses `forall/2` to check every `above(Upper, Lower)` fact. For each constraint: (1) both ingredients must be stacked, and (2) `Lower` must have been stacked before `Upper` (i.e., `Lower` is below `Upper` in the burger). If any constraint fails, the entire predicate fails.
@@ -189,7 +194,6 @@ constraints_satisfied(S) :-
 
 ```prolog
 burgerReady_goal(S) :-
-    all_ingredients_stacked(S),
     one_of_each_ingredient(S),
     first_action(S, stack(bottom_bun)),
     last_action(S, stack(top_bun)),
@@ -197,14 +201,15 @@ burgerReady_goal(S) :-
 ```
 
 **ARGUMENT:**
+
 - `S`: A situation to validate as a complete burger
 
-**Comment:** Defines the goal state for IDS. All five criteria must be satisfied:
-1. All 7 ingredients present
-2. Each ingredient appears exactly once (no duplicates)
-3. Bottom bun is the first action
-4. Top bun is the last action
-5. All `above/2` constraints from KB are satisfied
+**Comment:** Defines the goal state for IDS. All four criteria must be satisfied:
+
+1. Each ingredient appears exactly once (no duplicates)
+2. Bottom bun is the first action
+3. Top bun is the last action
+4. All `above/2` constraints from KB are satisfied
 
 This is the validation function that determines if a candidate solution is valid.
 
@@ -215,16 +220,17 @@ This is the validation function that determines if a candidate solution is valid
 ```prolog
 build_situation(s0).
 
-build_situation(result(stack(Ingredient), S)) :-
+build_situation(result(stack(I), S)) :-
     build_situation(S),
-    member(Ingredient, [bottom_bun, patty, lettuce, cheese, pickles, tomato, top_bun]),
-    \+ stacked(Ingredient, S).
+    member(I, [bottom_bun, patty, lettuce, cheese, pickles, tomato, top_bun]),
+    poss(stack(I), S).
 ```
 
 **ARGUMENT:**
+
 - `S`: A situation built from s0 through stacking actions
 
-**Comment:** Generates candidate situations for IDS to explore. Recursively builds situations by choosing ingredients and stacking them. `member/2` provides backtracking to try different ingredients. The `\+ stacked(Ingredient, S)` check ensures no ingredient is stacked twice during generation.
+**Comment:** Generates candidate situations for IDS to explore. Recursively builds situations by choosing ingredients and stacking them. `member/2` provides backtracking to try different ingredients. The `poss(stack(I), S)` check ensures no ingredient is stacked twice during generation.
 
 ---
 
@@ -236,6 +242,7 @@ burgerReady(S) :-
 ```
 
 **ARGUMENT:**
+
 - `S`: Either unbound to find solutions or bound to validate a burger configuration
 
 **Comment:** Main entry point for the system. Uses Iterative Deepening Search. Calls IDS with an initial depth limit of 1.
@@ -243,6 +250,7 @@ burgerReady(S) :-
 ---
 
 ### 13. IDS IMPLEMENTATION: `ids_burgerReady/2`
+
 ```prolog
 ids_burgerReady(S, Limit) :-
     call_with_depth_limit(
@@ -258,10 +266,12 @@ ids_burgerReady(S, Limit) :-
 ```
 
 **ARGUMENTS:**
+
 - `S`: The situation to find or validate
 - `Limit`: Current depth limit for the search
 
 **Comment:** Implements Iterative Deepening Search using `call_with_depth_limit/3`. The algorithm:
+
 1. Attempts to prove `(build_situation(S), burgerReady_goal(S))` within the current depth limit
 2. If `Result` is a number: solution found at that depth, return success
 3. If `Result` is `depth_limit_exceeded`: increment limit by 1 and recursively try again
@@ -269,4 +279,3 @@ ids_burgerReady(S, Limit) :-
 This ensures completeness - if a solution exists, IDS will eventually find it by systematically increasing the depth.
 
 ---
-
