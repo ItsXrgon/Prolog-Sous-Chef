@@ -8,31 +8,13 @@
 % Arguments:
 %   Ingredient: The ingredient to check
 %   S: The situation
-stacked(Ingredient, result(Action, S)) :-
-    % Case 1: The ingredient was just stacked in this action
-    Action = stack(Ingredient)
-    ;
-    % Case 2: The ingredient was already stacked in the previous situation
-    stacked(Ingredient, S).
-
-% Base case: Nothing is stacked in the initial situation s0
 stacked(_, s0) :- fail.
 
+stacked(I, result(A, _)) :- 
+    A = stack(I), !.
 
-% all_ingredients_stacked(S)
-% True if all required ingredients have been stacked in situation S
-%
-% Arguments:
-%   S: The situation to check
-all_ingredients_stacked(S) :-
-    stacked(bottom_bun, S),
-    stacked(patty, S),
-    stacked(lettuce, S),
-    stacked(cheese, S),
-    stacked(pickles, S),
-    stacked(tomato, S),
-    stacked(top_bun, S).
-
+stacked(I, result(_, S)) :-
+    stacked(I, S).
 
 % count_stacks(Ingredient, S, Count)
 % Counts how many times an ingredient appears in the situation S
@@ -95,13 +77,15 @@ last_action(result(Action, _), Action).
 %   Ingredient1: The ingredient that should be below
 %   Ingredient2: The ingredient that should be above
 %   S: The situation
-stacked_before(Ingredient1, Ingredient2, result(stack(Ingredient2), S)) :-
-    stacked(Ingredient1, S),
-    !.
+stacked_before(I1, I2, result(stack(I2), S)) :-
+    stacked(I1, S), !.
 
-stacked_before(Ingredient1, Ingredient2, result(stack(_), S)) :-
-    stacked_before(Ingredient1, Ingredient2, S).
+stacked_before(I1, I2, result(_, S)) :-
+    stacked_before(I1, I2, S).
 
+
+poss(stack(X), S) :-
+    \+ stacked(X,S).
 
 % constraints_satisfied(S)
 % True if all above/2 constraints from the knowledge base are satisfied
@@ -122,8 +106,6 @@ constraints_satisfied(S) :-
 % Arguments:
 %   S: A situation representing a complete valid burger
 burgerReady_goal(S) :-
-    % Check all ingredients present
-    all_ingredients_stacked(S),
     % Check each ingredient exactly once
     one_of_each_ingredient(S),
     % Check bottom_bun is first
@@ -142,10 +124,10 @@ burgerReady_goal(S) :-
 %   S: A situation built from s0
 build_situation(s0).
 
-build_situation(result(stack(Ingredient), S)) :-
+build_situation(result(stack(I), S)) :-
     build_situation(S),
-    member(Ingredient, [bottom_bun, patty, lettuce, cheese, pickles, tomato, top_bun]),
-    \+ stacked(Ingredient, S).
+    member(I, [bottom_bun, patty, lettuce, cheese, pickles, tomato, top_bun]),
+    poss(stack(I), S).
 
 % burgerReady(S)
 % Main predicate to find a valid burger configuration using IDS
