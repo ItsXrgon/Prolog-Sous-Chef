@@ -261,12 +261,12 @@ ids_burgerReady(S, Limit) :-
 - `S`: The situation to find or validate
 - `Limit`: Current depth limit for the search
 
-**Comment:** Implements Iterative Deepening Search using `call_with_depth_limit/3` as required by the assignment. The algorithm:
+**Comment:** Implements Iterative Deepening Search using `call_with_depth_limit/3`:
 1. Attempts to prove `(build_situation(S), burgerReady_goal(S))` within the current depth limit
 2. If `Result` is a number: solution found at that depth, return success
 3. If `Result` is `depth_limit_exceeded`: increment limit by 1 and recursively try again
 
-This ensures completeness - if a solution exists, IDS will eventually find it by systematically increasing the depth. The incremental approach (Limit + 1) ensures we find solutions at the shallowest depth first.
+This ensures completeness - if a solution exists, IDS will eventually find it by gradually increasing the depth.
 
 ---
 
